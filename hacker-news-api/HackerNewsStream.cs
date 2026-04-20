@@ -55,7 +55,7 @@ public class HackerNewsStream<T>
                     {
                         continue;
                     }
-                    _bufferBlock.Post(item.Data.data);
+                    _bufferBlock.Post(item.Data.Data);
                 }
             }
             catch (OperationCanceledException)

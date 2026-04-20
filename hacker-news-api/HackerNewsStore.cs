@@ -26,8 +26,8 @@ public class HackerNewsSseStore : IHackerNewsStore, IDisposable
         return Task.FromResult<IReadOnlyList<HackerNewsStory>>(_stories
                 .Values
                 .Select(t => t.Item1)
-                .OrderByDescending(hns => hns.score)
-                .ThenByDescending(hns => hns.id)
+                .OrderByDescending(hns => hns.Score)
+                .ThenByDescending(hns => hns.Id)
                 .Take(n)
                 .ToList()
                 );
@@ -114,8 +114,8 @@ public class HackerNewsRestStore : IHackerNewsStore
         }
         return _stories
                 .Values
-                .OrderByDescending(hns => hns.score)
-                .ThenByDescending(hns => hns.id)
+                .OrderByDescending(hns => hns.Score)
+                .ThenByDescending(hns => hns.Id)
                 .Take(n)
                 .ToList();
     }
@@ -130,13 +130,18 @@ public class HackerNewsRestStore : IHackerNewsStore
 
         foreach (var story in stories)
         {
-            _stories.TryAdd(story.id, story);
+            if(story == null)
+            {
+                //This would be starting ground for a more resilient systems, what if one of the stories failed for example in json parsing?
+                continue;
+            }
+            _stories.TryAdd(story.Id, story);
         }
 
         _lastFetchTime = DateTime.Now;
     }
 
-    private Task<HackerNewsStory> GetStory(int id)
+    private Task<HackerNewsStory?> GetStory(int id)
         => _itemClient.GetItemAsync(id, new CancellationTokenSource().Token);
 }
 

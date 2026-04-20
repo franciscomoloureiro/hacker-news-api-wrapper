@@ -31,10 +31,10 @@ public class HackerNewsItemClient(HttpClient httpClient) : HackerNewsClient(http
     public HackerNewsStream<HackerNewsStory> GetItemStream(int id)
         => new(() => GetStreamAsync($"https://hacker-news.firebaseio.com/v0/item/{id}.json"));
 
-    public async Task<HackerNewsStory> GetItemAsync(int id, CancellationToken cancellationToken)
+    public async Task<HackerNewsStory?> GetItemAsync(int id, CancellationToken cancellationToken)
     {
         var request = await GetRequestAsync($"https://hacker-news.firebaseio.com/v0/item/{id}.json", cancellationToken);
-        return JsonSerializer.Deserialize<HackerNewsStory>(await request.Content.ReadAsStringAsync());
+        return JsonSerializer.Deserialize<HackerNewsStory>(await request.Content.ReadAsStringAsync()) ?? default;
     }
 }
 
@@ -46,6 +46,6 @@ public class HackerNewsBestStoriesClient(HttpClient client) : HackerNewsClient(c
     public async Task<int[]> GetBestStoriesAsync(CancellationToken cancellationToken)
     {
         var request = await GetRequestAsync($"https://hacker-news.firebaseio.com/v0/beststories.json", cancellationToken);
-        return JsonSerializer.Deserialize<int[]>(await request.Content.ReadAsStringAsync());
+        return JsonSerializer.Deserialize<int[]>(await request.Content.ReadAsStringAsync()) ?? [];
     }
 }

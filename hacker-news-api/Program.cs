@@ -1,4 +1,4 @@
-using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace HackerNewsApi;
 
@@ -9,7 +9,7 @@ public class Program
         bool useSseStream = true;
         var builder = WebApplication.CreateBuilder(args);
 
-        // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+        //We could also have resilient clients as shown here https://learn.microsoft.com/en-us/dotnet/architecture/microservices/implement-resilient-applications/use-httpclientfactory-to-implement-resilient-http-requests
         builder.Services.AddHttpClient<HackerNewsBestStoriesClient>();
         builder.Services.AddHttpClient<HackerNewsItemClient>();
         if (useSseStream)
@@ -32,21 +32,78 @@ public class Program
                 throw new ArgumentException("n must be positive and <= 200");
             }
             var store = app.Services.GetRequiredService<IHackerNewsStore>();
-            return (await store.GetStories(n)).Select(hns => hns.id).ToArray();
+            return (await store.GetStories(n))
+                .Select(hns =>
+                    new ResposeStory()
+                    {
+                        Title = hns.Title,
+                        Uri = hns.Url ?? string.Empty,
+                        PostedBy = hns.By,
+                        Time = new DateTime(1970, 1, 1, 0, 0, 0).AddSeconds(hns.Time),
+                        Score = hns.Score,
+                        CommentCount = hns.Descendants
+                    })
+                .ToArray();
         })
         .WithName("GetTopStories");
-
-        app.MapGet("/story", async (HttpContext httpContext, int n) =>
-        {
-            var store = app.Services.GetRequiredService<IHackerNewsStore>();
-            return (await store.GetStories(200)).Where(s => s.id == n).ToArray();
-        })
-      .WithName("Story");
 
         app.Run();
     }
 }
 
-public record HackerNewsComment(string by, int id, int[] kids, int parent, string text, long time, string type);
-public record HackerNewsStory(int id, string title, string text, string by, long time, int score, int[] kids, int descendants, string type);
-public record HackerNewsItem<T>(string path, T data);
+public class ResposeStory
+{
+    [JsonPropertyName("title")]
+    public required string Title { get; set; }
+
+    [JsonPropertyName("uri")]
+    public required string Uri { get; set; }
+
+    [JsonPropertyName("postedBy")]
+    public required string PostedBy { get; set; }
+
+    [JsonPropertyName("time")]
+    public required DateTime Time { get; set; }
+
+    [JsonPropertyName("score")]
+    public int Score { get; set; }
+
+    [JsonPropertyName("commentCount")]
+    public int CommentCount { get; set; }
+}
+
+public class HackerNewsStory
+{
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+
+    [JsonPropertyName("title")]
+    public required string Title { get; set; }
+
+    [JsonPropertyName("by")]
+    public required string By { get; set; }
+
+    [JsonPropertyName("time")]
+    public long Time { get; set; }
+
+    [JsonPropertyName("score")]
+    public int Score { get; set; }
+
+    [JsonPropertyName("descendants")]
+    public int Descendants { get; set; }
+
+    [JsonPropertyName("url")]
+    public string? Url { get; set; }
+
+    [JsonPropertyName("type")]
+    public required string Type { get; set; }
+}
+
+public record HackerNewsItem<T>
+{
+    [JsonPropertyName("path")]
+    public required string Path { get; set; }
+
+    [JsonPropertyName("data")]
+    public required T Data { get; set; }
+}
